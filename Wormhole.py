@@ -63,7 +63,7 @@ camseph = cartesianToSpherical(*cam)  # (1, pi/2, 0)
 # camTcs = 0
 lenphi, lentheta = 16, 16
 ranphi, rantheta = (-np.pi/4, np.pi/4), (-np.pi/4, np.pi/4)
-output = [[(0, 0, 0)] * lenphi]*lentheta
+output = [[(0, 0, 0)] * lentheta]*lenphi
 for stepT in range(lentheta):
     camTcs = rantheta[0] + (rantheta[1]-rantheta[0])/lentheta*stepT
     for stepP in range(lenphi):
@@ -73,7 +73,6 @@ for stepT in range(lentheta):
         vseph = cartesianToSpherical(*camDx)
         camN = sphericalToCartesian(1, vseph[1]+camTcs, vseph[2]+camPcs)
         # ------------------------- I think the code is free of bugs up to here
-        # print((vseph[1]+camTcs, vseph[2]+camPcs))
         # little n
         n = (-camN[0], -camN[1], camN[2])
         # if(camPcs==0 and camTcs==0):
@@ -88,23 +87,20 @@ for stepT in range(lentheta):
         # numerically integrate from t=0 to t=-infinity
         # location = cam, momentum = p,  constants of motion (b, Bsquared)
 
-        # dl/dt = p_l
-        # dtheta/dt = p_theta/r^2
-        # dphi/dt = b/(r^2 sin^2(theta))
-        # dP_l/dt = B^2* (dr/dl) /r^3
-        # dP_theta b^2*cos(theta)/(r^2*sin^3(theta))
-
-
         b = b
         Bsq = Bsquared
         (l, th, ph, Pl, Pth) = (camseph[0], camseph[1], camseph[2], p[0], p[1])
-        ti = -100  # = negative infinity
-        dt = -0.1
+        ti = -1000  # = negative infinity
+        dt = -0.5
         t = 0
         # print(th)
         while t > ti:  # I don't know how to use for loops...
+            # dl/dt = p_l
+            # dtheta/dt = p_theta/r^2
+            # dphi/dt = b/(r^2 sin^2(theta))
+            # dP_l/dt = B^2* (dr/dl) /r^3
+            # dP_theta b^2*cos(theta)/(r^2*sin^3(theta))
             r = distance(Bhole, sphericalToCartesian(l, th, ph))
-            # break
             nl = l + Pl*dt
             nth = th + Pth/r**2*dt
             nph = ph + b/(r*np.sin(th))**2*dt
@@ -120,20 +116,26 @@ for stepT in range(lentheta):
 
 pp = pprint.PrettyPrinter(indent=2, width=160)
 pp.pprint(output)
-# output now contains an array of all (l', theta', phi') showing which part of each image to sample
+
+# output now contains an array of(l', theta', phi') for (theta, phi)
 tx1 = cv2.imread("tex1.jpg")
 tx2 = cv2.imread("tex2.png")
 img = np.zeros((256, 256, 3), np.uint8)
+
 for x in range(256):
     x1 = math.floor(x/256*(lenphi-1))
     xw = 1-(x/256*(lenphi-1) - x1)  # weight for x vs x+1
     for y in range(256):
         y1 = math.floor(y/256*(lentheta-1))
         yw = 1-(y/256*(lentheta-1) - y1)
+        # the final coordinates are linearly interpolatedg from the small grid
         coordinates = add(mult(xw*yw, output[x1][y1]),
                           mult(xw*(1-yw), output[x1][y1+1]),
                           mult((1-xw)*yw, output[x1+1][y1]),
                           mult((1-xw)*(1-yw), output[x1+1][y1+1]))
+
+        # the following will be upgraded if things work - sample the textures
+        # in its current state this code should produce a black circle on white
         if(coordinates[0] < 0):
             img[x, y] = [0, 0, 0]
         else:
