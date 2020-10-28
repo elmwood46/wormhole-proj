@@ -38,6 +38,8 @@ def distance(a, b):
 
 def add(*tups):
     return tuple(map(sum, zip(*tups)))
+
+
 def mult(s, tup):
     return tuple([z * s for z in tup])
 
@@ -69,14 +71,15 @@ for stepT in range(lentheta):
 
         # unit vector in that direction is:
         vseph = cartesianToSpherical(*camDx)
-        camN = sphericalToCartesian(1, vseph[1]+camTcs, vseph[2]+camPcs)  # ---------------------------- I think the code is free of bugs up to here
+        camN = sphericalToCartesian(1, vseph[1]+camTcs, vseph[2]+camPcs)
+        # ------------------------- I think the code is free of bugs up to here
         # print((vseph[1]+camTcs, vseph[2]+camPcs))
         # little n
         n = (-camN[0], -camN[1], camN[2])
         # if(camPcs==0 and camTcs==0):
         # print(n)
 
-        r = distance(Bhole, cam)  # r is the improper distance to the wormhole (I think)
+        r = distance(Bhole, cam)  # r is the improper distance to the wormhole
         # incoming light ray's canonical momentum
         p = (n[0], r*n[1], r*np.sin(camTcs)*n[2])
         b = p[2]  # = r*np.sin(theta)*n[2]
