@@ -156,7 +156,7 @@ for x in range(width):
         coordinate = (weight*output[index][0]+(1-weight)*output[index+1][0],
                       weight*output[index][1]+(1-weight)*output[index+1][1],
                       weight*output[index][2]+(1-weight)*output[index+1][2])
-
+   
         orthog = normalise(*np.cross(dir, camDx))
         rayEndpoint = rotate(dir, orthog, coordinate[1])
 
