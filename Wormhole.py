@@ -46,12 +46,12 @@ def mult(s, tup):
 Bhole = (0, 0, 0)  # black hole at (0,0,0) --by definition I think
 up = (0, 0, 1)  # vector in the "up" direction in world space
 
-cam = (2, 0, 0)  # camera location in cartesian coordinates
+cam = (-1, 0, 0)  # camera location in cartesian coordinates
 camseph = cartesianToSpherical(*cam)  # (1, pi/2, 0)
-camseph = (-camseph[0], camseph[1], camseph[2])  # try starting from the other side?
+# camseph = (-camseph[0], camseph[1], camseph[2])  # try starting from the other side?
 camDx = normalise(*np.subtract(cam, Bhole))  # look direction
 camDy = normalise(*np.cross(up, camDx))
-camDz = mult(+1, tuple(np.cross(camDx, camDy)))
+camDz = tuple(np.cross(camDx, camDy))
 cam_Lookat = np.matmul(
     np.array([[*camDx, 0], [*camDy, 0], [*camDz, 0], [0, 0, 0, 1]]),
     np.array([[1, 0, 0, -cam[0]], [0, 1, 0, -cam[1]], [0, 0, 1, -cam[2]], [0, 0, 0, 1]]))
@@ -61,7 +61,7 @@ cam_Lookat = np.matmul(
 # direction on the cameras local sky
 # camPcs = 0
 # camTcs = 0
-lenphi, lentheta = 64, 64
+lenphi, lentheta = 32, 32
 ranphi, rantheta = (-np.pi/4, np.pi/4), (-np.pi/4, np.pi/4)
 output = [[0 for i in range(lentheta)] for j in range(lenphi)]
 for stepT in range(lentheta):
@@ -75,7 +75,8 @@ for stepT in range(lentheta):
         camN = sphericalToCartesian(1, vseph[1]+camTcs, vseph[2]+camPcs)
         # ------------------------- I think the code is free of bugs up to here
         # little n
-        n = (-camN[0], -camN[1], +camN[2])
+        # n = (-camN[0], -camN[1], +camN[2]) - should be, but doesn't work???
+        n = (-camN[0], -camN[1], +camN[2])  # I think this is backwards because I am casting the rays backwards in time, and therefore also  backwards is space, so I want the actual vector to point away from the origin
 
         r = camseph[0]  # distance(Bhole, cam)  # r is the improper distance to the wormhole
         # incoming light ray's canonical momentum
@@ -90,8 +91,8 @@ for stepT in range(lentheta):
         b = b
         Bsq = Bsquared
         (l, th, ph, Pl, Pth) = (camseph[0], camseph[1], camseph[2], p[0], p[1])
-        ti = -1000  # = negative infinity
-        dt = -0.3187
+        ti = -100  # = negative infinity
+        dt = -0.187  # something is off with dt - doesn't scale correctly
         t = 0
         # print(th)
         while t > ti:  # I don't know how to use for loops...
@@ -105,6 +106,7 @@ for stepT in range(lentheta):
             nth = th + Pth/(r**2)*dt
             nph = ph + b/((r*np.sin(th))**2)*dt
             dr = nl-r  # distance(Bhole, sphericalToCartesian(nl, nth, nph))-r
+            # so dl = dr? => dr/dl:=1
             (l, th, ph, Pl, Pth) = (nl,
                                     nth,
                                     nph,
@@ -112,25 +114,25 @@ for stepT in range(lentheta):
                                     Pth + (b**2*np.cos(th))/(r**2*np.sin(th)**3)*dt)
             t += dt
 
-        print(stepP*lenphi+stepT)
+        print(stepT*lentheta+stepP)
         output[stepP][stepT] = (l, th, ph)
 
 
-# result = [[output[j][i] for j in range(len(output))] for i in range(len(output[0]))]
 pp = pprint.PrettyPrinter(indent=2, width=160)
 pp.pprint(output)
 
 # output now contains an array of(l', theta', phi') for (theta, phi)
-tx1 = cv2.imread("tex1.jpg")
-tx2 = cv2.imread("tex2.png")
-img = np.zeros((256, 256, 3), np.uint8)
+size = 512
+tx1 = cv2.imread("InterstellarWormhole_Fig6a.jpg")
+tx2 = cv2.imread("InterstellarWormhole_Fig10.jpg")
+img = np.zeros((size, size, 3), np.uint8)
 
-for x in range(256):
-    x1 = int(np.floor(x/256*(lenphi-1)))
-    xw = 1-(x/256*(lenphi-1) - x1)  # weight for x vs x+1
-    for y in range(256):
-        y1 = int(np.floor(y/256*(lentheta-1)))
-        yw = 1-(y/256*(lentheta-1) - y1)
+for x in range(size):
+    x1 = int(np.floor(x/size*(lenphi-1)))
+    xw = 1-(x/size*(lenphi-1) - x1)  # weight for x vs x+1
+    for y in range(size):
+        y1 = int(np.floor(y/size*(lentheta-1)))
+        yw = 1-(y/size*(lentheta-1) - y1)
         # the final coordinates are linearly interpolatedg from the small grid
         coordinates = add(mult(xw*yw, output[x1][y1]),
                           mult(xw*(1-yw), output[x1][y1+1]),
@@ -139,12 +141,13 @@ for x in range(256):
 
         # the following will be upgraded if things work - sample the textures
         # in its current state this code should produce a black circle on white
-        if(coordinates[0] > 0):
+        if(coordinates[0] < 0):
             rows, cols, channels = tx1.shape
             img[x, y] = tx1[int(((coordinates[1]/(np.pi)) % 1)*rows),
                             int(((coordinates[2]/(2*np.pi)+0.5) % 1)*cols)]
         else:
             rows, cols, channels = tx2.shape
+            s = min(rows, cols)
             img[x, y] = tx2[int(((coordinates[1]/(np.pi)) % 1)*rows),
                             int(((coordinates[2]/(2*np.pi)+0.5) % 1)*cols)]
 
