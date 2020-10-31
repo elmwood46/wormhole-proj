@@ -1,2 +1,2 @@
 # wormhole-proj
-Wormhole simulation redered using opengl
+Wormhole simulation rendered using opengl
