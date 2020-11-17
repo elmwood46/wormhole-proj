@@ -31,8 +31,8 @@ camDx = cam.toBasisVector_r()  # look direction
 camDy = cam.toBasisVector_phi()  # unused
 camDz = mult(-1, cam.toBasisVector_theta())  # unused
 
-lenphi = 1000
-ranphi = (0, 2**(1/2)*np.pi/4)
+lenphi = 500
+ranphi = (0, np.pi/2)
 output = [0 for i in range(lenphi)]
 
 for stepP in range(lenphi):
@@ -60,7 +60,7 @@ for stepP in range(lenphi):
     (l, th, ph, Pl, Pth) = (cam.len, cam.theta, cam.phi, p.len, p.theta)
     # print(vseph)
     ti = -20  # = negative infinity
-    dt = -0.027
+    dt = -0.017
     t = 0
     while t > ti:  # I don't know how to use for loops...
         # dl/dt = p_l
@@ -81,12 +81,18 @@ for stepP in range(lenphi):
     output[stepP] = (l, th, ph)
 print()
 
-pp = pprint.PrettyPrinter(indent=2, width=160)
-pp.pprint(output)
+# pp = pprint.PrettyPrinter(indent=2, width=160)
+# pp.pprint(output)
+
+
+# with open("out_line.csv", "w", newline="") as f:
+#     for item in output:
+#         f.write("{}, {}, {}\n".format(item[0], item[1], item[2]))
+#     f.write('\n')
 
 
 # output now contains an array of(l', theta', phi') for (theta, phi)
-width = 512
+width = 256
 ratio = 1
 fov = np.pi/2.0
 height = int(width/ratio)
@@ -94,10 +100,13 @@ tx1 = cv2.imread("InterstellarWormhole_Fig6a.jpg")
 tx2 = cv2.imread("InterstellarWormhole_Fig10.jpg")
 img = np.zeros((width, height, 3), np.uint8)
 
+# outThing = [[0 for i in range(width)] for j in range(height)]
+FDir = (1, 0, 0)
 for x in range(width):
     for y in range(height):
-        dir = normalise(x-width/2, y-height/2, (height/2)/np.tan(fov*0.5))
-        ang_between = np.arccos(dir[2])  # np.arccos(np.dot((0,0,1), dir))
+        dir = normalise(x-width/2, y-height/2, (height/2)/math.tan(fov/2.0))
+        dirs = SphVector.fromCartesian(*dir)
+        ang_between = dirs.phi
         cell = max(min(ang_between/ranphi[1], 1), 0)*(lenphi-2)
         index = int(cell)
         weight = cell - index
@@ -106,6 +115,7 @@ for x in range(width):
                       weight*output[index][1]+(1-weight)*output[index+1][1],
                       weight*output[index][2]+(1-weight)*output[index+1][2])
 
+        # I think the worst error is here
         orthog = normalise(*np.cross(dir, camDx))
         rayEndpoint = rotate(dir, orthog, coordinate[1])
 
@@ -118,7 +128,26 @@ for x in range(width):
             s = min(rows, cols)
             img[x, y] = tx2[int(((rayEndpoint[1]/(np.pi)) % 1)*rows),
                             int(((rayEndpoint[2]/(2*np.pi)+0.5) % 1)*cols)]
+        # img[x, y] = mult(ang_between/math.pi, (255,255,255=))
     updateProgressBar((x*width+y)/(width*height))
 print()
 # img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
-cv2.imwrite("out.png", img)
+cv2.imwrite("out_line.png", img)
+
+
+# with open("out_line.csv", "w", newline="") as f:
+#     for sublist in outThing:
+#         for item in sublist:
+#             f.write("{},".format(item[0]))
+#         f.write('\n')
+#     f.write('\n')
+#     for sublist in outThing:
+#         for item in sublist:
+#             f.write("{},".format(item[1]))
+#         f.write('\n')
+#     f.write('\n')
+#     for sublist in outThing:
+#         for item in sublist:
+#             f.write("{},".format(item[2]))
+#         f.write('\n')
+#     f.write('\n')
