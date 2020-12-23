@@ -1,0 +1,11 @@
+2d wormhole simulator
+
+Use WASD to move the space ship
+
+Hold CTRL to go slower
+
+Change the wormhole_radius and wormhole_bore by clicking their text.
+
+-----
+
+Going through the wormhole flips your y-trajectory on the plane but preserves x-trajectories.
